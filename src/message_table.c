@@ -74,6 +74,7 @@ int update_host_list()
    }             
 //   pthread_mutex_unlock(&table_mutex);
    g_array_sort(member_list,(GCompareFunc)my_int_sort_function);
+   g_array_free(member_list,FALSE);
  //  pthread_mutex_unlock(&members_mutex);
    funcExit(logF,NULL,"update_host_list",0);
 }
@@ -156,7 +157,7 @@ int chooseFriendsForReplication(int *ptr)
    int *a = (int *)malloc(sizeof(int)*(member_list->len));
    //int a[member_list->len];
 
-   if(a==NULL) return -1;
+   if(a==NULL){g_array_free(member_list,FALSE); return -1;}
 
    for(i=0;i<member_list->len;i++){                 //
          a[i] = g_array_index(member_list,int,i);
@@ -201,6 +202,7 @@ int chooseFriendsForReplication(int *ptr)
    done : 
        //    pthread_mutex_unlock(&members_mutex);
        //    pthread_mutex_unlock(&table_mutex);
+         g_array_free(member_list,FALSE);
          free(a);
            sprintf(logMsg, "FINAL SET OF FRIENDS CHOSEN ARE THESE TWO: %d --------- %d", ptr[0], ptr[1]);
            printToLog(logF, "HERE ARE MY FRIENDS", logMsg);
@@ -276,7 +278,7 @@ int chooseFriendsForHim(int *ptr, int hisHashValue)
    done : 
         //   pthread_mutex_unlock(&members_mutex);
         //   pthread_mutex_unlock(&table_mutex);
- 
+           g_array_free(member_list,FALSE);
            sprintf(logMsg, "FINAL SET OF FRIENDS CHOSEN ARE THESE TWO: %d --------- %d", ptr[0], ptr[1]);
            printToLog(logF, "HERE ARE MY FRIENDS", logMsg);
            funcExit(logF,NULL,"choose_friends_him",0);
@@ -363,7 +365,8 @@ int choose_host_hb_index(int key)
     }	 
    printToLog(logF,"I am here too","hello");
 
-   done:
+   done: 
+    g_array_free(member_list,FALSE);
    
    for(i=0;i<MAX_HOSTS;i++){
        if(hb_table[i].valid && hb_table[i].status){
@@ -371,6 +374,7 @@ int choose_host_hb_index(int key)
                     funcExit(logF,NULL,"choose_host_hb_index",i);
               //      pthread_mutex_unlock(&members_mutex); 
               //      pthread_mutex_unlock(&table_mutex);
+                    
                     return i;
           }
        }
