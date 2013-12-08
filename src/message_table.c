@@ -31,6 +31,27 @@ pthread_mutex_t members_mutex;
 
 int my_hash_value;
 
+
+int my_sort_list(int* ptr, int num){
+
+int c,d,swap;
+
+  for (c = 0 ; c < ( num - 1 ); c++)
+  {
+    for (d = 0 ; d < num - c - 1; d++)
+    {
+      if (ptr[d] > ptr[d+1]) /* For decreasing order use < */
+      {
+        swap       = ptr[d];
+        ptr[d]   = ptr[d+1];
+        ptr[d+1] = swap;
+      }
+    }
+  }
+
+}
+
+
 int giveIndexForHash(int hash_value){
    funcEntry(logF, NULL, "giveIndexForHash");
    int i;
@@ -53,31 +74,33 @@ int my_int_sort_function (gpointer a, gpointer b)
     return *x - *y;
 }
 
-// a mutex required ?
+
 
 int update_host_list()
 {
    funcEntry(logF,NULL,"update_host_list");
-   pthread_mutex_lock(&members_mutex);                                                  // put print to log here
-   //GArray* member_list;
-   member_list = g_array_new(FALSE,FALSE,sizeof(int));// change 1
-   if ( NULL == member_list )
-       printToLog(logF, "HEAP MEM FULL", "HEAP MEM FULL");
+   pthread_mutex_lock(&members_mutex);            
+   
+   int member_list[MAX_HOSTS];
+   int z;
+   for(z=0;z<MAX_HOSTS;z++)member_list[z]=0;
+
    printToLog(logF,"I AM HERE IN GLIB","AFTER CREATION");
- //   pthread_mutex_lock(&members_mutex);
+ 
    int j = 0;
    int i = 0;
-   // copy the hash id and index
-//   pthread_mutex_lock(&table_mutex);
+   int m=0;
+
    for(i=0;i<MAX_HOSTS;i++){
             if(hb_table[i].valid && hb_table[i].status){
                         int val = atoi(hb_table[i].host_id);
-                        g_array_append_val(member_list, val);
+                        member_list[m] = val;
+                        m++;
             }
    }             
-//   pthread_mutex_unlock(&table_mutex);
-   g_array_sort(member_list,(GCompareFunc)my_int_sort_function);
-   //gpointer value = g_array_free(member_list,FALSE);
+
+   my_sort_list(member_list,m);
+  
    printToLog(logF,"I AM HERE IN GLIB","AFTER FREEING");
    pthread_mutex_unlock(&members_mutex);
    funcExit(logF,NULL,"update_host_list",0);
@@ -139,77 +162,68 @@ int chooseFriendsForReplication(int *ptr)
    funcEntry(logF,NULL,"choose_friends");
          
    pthread_mutex_lock(&members_mutex);                                            // put print to log here
-   //pthread_mutex_lock(&table_mutex);
-   //GArray* member_list;
-   member_list = g_array_new(FALSE,FALSE,sizeof(int));// change 1
+   
 
-//   pthread_mutex_lock(&members_mutex);
+   //INITIALISE AN ARRAY
+  
+   int member_list[MAX_HOSTS];
+   int z;
+   for(z=0;z<MAX_HOSTS;z++)member_list[z]=0;
+
+   int m=0;  // iterator for array  // length of the array
+
    int j = 0;
    int i = 0;
    int hash_value = my_hash_value;
-   // copy the hash id and index
-  // pthread_mutex_lock(&table_mutex);
+  
+  
    for(i=0;i<MAX_HOSTS;i++){
             if(hb_table[i].valid && hb_table[i].status){
                         int val = atoi(hb_table[i].host_id);
-                        g_array_append_val(member_list, val);
+                        member_list[m] = val;  
+                        m++;
             }
    }
-  // pthread_mutex_unlock(&table_mutex);
-   g_array_sort(member_list,(GCompareFunc)my_int_sort_function);
-   printToLog(logF,"I AM HERE IN GLIB","AFTER CREATION");
+  
+   my_sort_list(member_list,m);
+   printToLog(logF,"I AM HERE IN GLIB","AFTER CREATION");   
    
-   int *a = (int *)malloc(sizeof(int)*(member_list->len));
-   //int a[member_list->len];
-
-   if(a==NULL){/*g_array_free(member_list,FALSE);*/ return -1;}
-
-   for(i=0;i<member_list->len;i++){                 //
-         a[i] = g_array_index(member_list,int,i);
-   }
-
-   if(member_list->len == 0){  // impossible case
+   if(m == 0){  // impossible case
            funcExit(logF,NULL,"choose_friends",-1);
            pthread_mutex_unlock(&members_mutex);
-   //        pthread_mutex_unlock(&table_mutex);
            return -1;
    }
 
-   if(member_list->len == 1){  // when only i am alive
+   if(m == 1){  // when only i am alive
            funcExit(logF,NULL,"choose_friends",-1);
            pthread_mutex_unlock(&members_mutex);
-     //      pthread_mutex_unlock(&table_mutex);
-           free(a);
            return -1;
     }
 
-   if(member_list->len == 2){  // only one friend possible           
-           if (a[0]==hash_value){
-                   ptr[0]=a[1];    // put the hash value of the friend
+   if(m == 2){  // only one friend possible           
+           if (member_list[0]==hash_value){
+                   ptr[0]=member_list[1];    // put the hash value of the friend
                    ptr[1]=-1;  // error case
            }
            else {
-                   ptr[0]=a[0];   // put the hash value of the friend
+                   ptr[0]=member_list[0];   // put the hash value of the friend
                    ptr[1]=-1;   // error case
            }
      goto done;
    }   
               
    printToLog(logF,"I am here","yesssssssssss");
-   for(i=0;i<member_list->len;i++){          
-           if(a[i]==hash_value){
-                   ptr[0]=a[(i+1)%(member_list->len)];
-                   ptr[1]=a[(i+2)%(member_list->len)];
+   for(i=0;i<m;i++){          
+           if(member_list[i]==hash_value){
+                   ptr[0]=member_list[(i+1)%m];
+                   ptr[1]=member_list[(i+2)%m];
                    break;
            }
    }
-   gpointer rc;
+  // gpointer rc;
    done : 
            pthread_mutex_unlock(&members_mutex);
-       //    pthread_mutex_unlock(&table_mutex);
-           //rc = g_array_free(member_list,FALSE);
            printToLog(logF,"I AM HERE IN GLIB","AFTER FREEING");
-           free(a);
            sprintf(logMsg, "FINAL SET OF FRIENDS CHOSEN ARE THESE TWO: %d --------- %d", ptr[0], ptr[1]);
            printToLog(logF, "HERE ARE MY FRIENDS", logMsg);
            funcExit(logF,NULL,"choose_friends",0);
@@ -220,71 +234,65 @@ int chooseFriendsForReplication(int *ptr)
 int chooseFriendsForHim(int *ptr, int hisHashValue)
 {
    funcEntry(logF,NULL,"choose_friends_him");
-   //GArray* member_list;      
+ 
   pthread_mutex_lock(&members_mutex);                                            // put print to log here
-  // pthread_mutex_lock(&table_mutex);
-   member_list = g_array_new(FALSE,FALSE,sizeof(int));// change 1
+
+   int member_list[MAX_HOSTS];
+   int z;
+   for(z=0;z<MAX_HOSTS;z++)member_list[z]=0;
+   int m=0;
+
    printToLog(logF,"I AM HERE IN GLIB","AFTER CREATION");
-//   pthread_mutex_lock(&members_mutex);
    int j = 0;
    int i = 0;
    int hash_value = hisHashValue;
-   // copy the hash id and index
    
- //  pthread_mutex_lock(&table_mutex);
    for(i=0;i<MAX_HOSTS;i++){
             if(hb_table[i].valid && hb_table[i].status){
                         int val = atoi(hb_table[i].host_id);
-                        g_array_append_val(member_list, val);
+                        member_list[m]=val;
+                        m++;
             }
    }
-  // pthread_mutex_unlock(&table_mutex);
-   g_array_sort(member_list,(GCompareFunc)my_int_sort_function);
    
-   int a[member_list->len];
-   for(i=0;i<member_list->len;i++){                 //
-         a[i] = g_array_index(member_list,int,i);
-   }
+   my_sort_list(member_list,m);
 
-   if(member_list->len == 0){  // impossible case
+
+   if(m == 0){  // impossible case
            funcExit(logF,NULL,"choose_friends",-1);
            pthread_mutex_unlock(&members_mutex);
-    //       pthread_mutex_unlock(&table_mutex);
            return -1;
    }
 
-   if(member_list->len == 1){  // when only i am alive
+   if(m == 1){  // when only i am alive
            funcExit(logF,NULL,"choose_friends",-1);
            pthread_mutex_unlock(&members_mutex);
-      //     pthread_mutex_unlock(&table_mutex);
            return -1;
     }
 
-   if(member_list->len == 2){  // only one friend possible           
-           if (a[0]==hash_value){
-                   ptr[0]=a[1];    // put the hash value of the friend
+   if(m == 2){  // only one friend possible           
+           if (member_list[0]==hash_value){
+                   ptr[0]=member_list[1];    // put the hash value of the friend
                    ptr[1]=-1;  // error case
            }
            else {
-                   ptr[0]=a[0];   // put the hash value of the friend
+                   ptr[0]=member_list[0];   // put the hash value of the friend
                    ptr[1]=-1;   // error case
            }
      goto done;
    }   
               
    printToLog(logF,"I am here","yesssssssssss");
-   for(i=0;i<member_list->len;i++){          
-           if(a[i]==hash_value){
-                   ptr[0]=a[(i+1)%(member_list->len)];
-                   ptr[1]=a[(i+2)%(member_list->len)];
+   for(i=0;i<m;i++){          
+           if(member_list[i]==hash_value){
+                   ptr[0]=member_list[(i+1)%m];
+                   ptr[1]=member_list[(i+2)%m];
                    break;
            }
    }
    gpointer rc;
    done : 
            pthread_mutex_unlock(&members_mutex);
-        //   pthread_mutex_unlock(&table_mutex);
-           //rc = g_array_free(member_list,FALSE);
            printToLog(logF,"I AM HERE IN GLIB","AFTER FREEING");
            sprintf(logMsg, "FINAL SET OF FRIENDS CHOSEN ARE THESE TWO: %d --------- %d", ptr[0], ptr[1]);
            printToLog(logF, "HERE ARE MY FRIENDS", logMsg);
@@ -304,53 +312,50 @@ int choose_host_hb_index(int key)
     char buffer[20];
     sprintf(buffer,"%d",key);
 
-    //GArray* member_list;
+ 
     int hash_value = g_str_hash(buffer) % 360;
- //   int a[member_list->len];
+ 
     pthread_mutex_lock(&members_mutex); 
- //   pthread_mutex_lock(&table_mutex);
-  //  pthread_mutex_lock(&table_mutex);
-    member_list = g_array_new(FALSE,FALSE,sizeof(int));
+ 
+    int member_list[MAX_HOSTS];  
+    int m=0;
+    
+    for(i=0;i<MAX_HOSTS;i++)member_list[i]=0;
+
     printToLog(logF,"I AM HERE IN GLIB","AFTER CREATION");
     for(i=0;i<MAX_HOSTS;i++){
             if(hb_table[i].valid && hb_table[i].status){
                         int val = atoi(hb_table[i].host_id);
-                        g_array_append_val(member_list, val);
+                        member_list[m] = val;
+                        m++;
             }
    }
-  // pthread_mutex_unlock(&table_mutex);
-   g_array_sort(member_list,(GCompareFunc)my_int_sort_function);
-
-    int a[member_list->len];
-
-    for(i=0;i<member_list->len;i++){
-         a[i] = g_array_index(member_list,int,i);
-    }
+ 
+   my_sort_list(member_list,m);
 
      
-    // impossible case, expect atleast one element to be present
-    if( member_list->len == 0){
+    // impossible case, expect atleast one element
+    if( m == 0){
            pthread_mutex_unlock(&members_mutex); 
-       //    pthread_mutex_unlock(&table_mutex);
            return -1;
     }
     // if only one member is present
-    if( member_list->len == 1){
-          result =  a[0];
+    if( m == 1){
+          result =  member_list[0];
           goto done;
     }
     // if hash_value is less than first element in the sorted list
-    if(hash_value < a[0]){
-           result = a[0];
+    if(hash_value < member_list[0]){
+           result = member_list[0];
            goto done;
     }
-    if(hash_value > a[member_list->len - 1]){
-            result = a[0];
+    if(hash_value > member_list[m-1]){
+            result = member_list[0];
             goto done;
     }
-    if (hash_value == a[member_list->len - 1])
+    if (hash_value == member_list[m -1])
     {
-         result = a[member_list->len - 1];
+         result = member_list[m - 1];
          goto done;
     }
 
@@ -359,14 +364,14 @@ int choose_host_hb_index(int key)
     //
     printToLog(logF,"I am here","hello");
     int flag=0;
-    for(i=0;i<member_list->len;i++){
-         if(hash_value == a[i]){ 
-            result = a[i];
+    for(i=0;i<m;i++){
+         if(hash_value == member_list[i]){ 
+            result = member_list[i];
             goto done;
          }
 
-            if(hash_value > a[i] && hash_value < a[i+1]){
-                       result = a[i+1];
+            if(hash_value > member_list[i] && hash_value < member_list[i+1]){
+                       result = member_list[i+1];
                        flag = 1;          
                        goto done;
             }
@@ -375,7 +380,6 @@ int choose_host_hb_index(int key)
    gpointer rc;
    done: 
 
-   //rc = g_array_free(member_list,FALSE);
    printToLog(logF,"I AM HERE IN GLIB","AFTER FREEING");
    
    for(i=0;i<MAX_HOSTS;i++){
@@ -383,14 +387,11 @@ int choose_host_hb_index(int key)
           if(atoi(hb_table[i].host_id)==result){
                     funcExit(logF,NULL,"choose_host_hb_index",i);
                     pthread_mutex_unlock(&members_mutex); 
-              //      pthread_mutex_unlock(&table_mutex);
                     
                     return i;
           }
        }
    }             
- // pthread_mutex_unlock(&members_mutex); 
- // pthread_mutex_unlock(&table_mutex);
 
 }
 /*
