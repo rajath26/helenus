@@ -1380,7 +1380,7 @@ int extract_message_op(char *message, struct op_code** instance){
  
                             token=strtok(NULL,delim);    //GET VALUE
 			    int len = strlen(token);     
-			    char *value_instance = (char *)malloc(len);
+			    char *value_instance = (char *)malloc(len+5);
 			    strcpy(value_instance,token);
                     	    (*instance)->value = value_instance;
                             (*instance)->timeStamp = timestampval;
@@ -1416,7 +1416,7 @@ int extract_message_op(char *message, struct op_code** instance){
             
                             token = strtok(NULL,delim);  // get the value to update
                             int len = strlen(token);
-                            char *value_instance = (char *)malloc(len);					 
+                            char *value_instance = (char *)malloc(len+5);					 
 			    strcpy(value_instance, token);
 			    (*instance)->value = value_instance;
                             
@@ -1449,7 +1449,7 @@ int extract_message_op(char *message, struct op_code** instance){
 					 
 			    token = strtok(NULL,delim); // get value
 			    int len = strlen(token);
-			    char *value_instance = (char *)malloc(len);
+			    char *value_instance = (char *)malloc(len+5);
 			    strcpy(value_instance, token);
 			    (*instance)->value = value_instance;
                             
@@ -1484,7 +1484,7 @@ int extract_message_op(char *message, struct op_code** instance){
 
                             token=strtok(NULL,delim);    //GET VALUE
                             int len = strlen(token);
-                            char *value_instance = (char *)malloc(len);
+                            char *value_instance = (char *)malloc(len+5);
                             strcpy(value_instance,token);
 
                             (*instance)->value = value_instance;
@@ -1509,7 +1509,7 @@ int extract_message_op(char *message, struct op_code** instance){
                             token = strtok(NULL,delim);  // get value
                             int len = strlen(token);
 
-                            char *value_instance = (char *)malloc(len);
+                            char *value_instance = (char *)malloc(len+5);
                             strcpy(value_instance,token);
  
  		            (*instance)->value = value_instance;
@@ -1595,7 +1595,7 @@ int extract_message_op(char *message, struct op_code** instance){
                             token = strtok(NULL,delim);  // get value
                             int len = strlen(token);
 
-                            char *value_instance = (char *)malloc(len);
+                            char *value_instance = (char *)malloc(len+5);
                             strcpy(value_instance,token);
 
                             (*instance)->value = value_instance;
