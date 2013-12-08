@@ -467,6 +467,7 @@ int parseKVClientCmd()
          strcpy(key, token);
          keySet = 1;
          printf("\nKEY: %s\n", key);
+         hashedKey = (abs(g_str_hash(key))) % 10000;
     }
 
     // VALUE 
@@ -569,7 +570,7 @@ int createAndSendOpMsg()
 
         case INSERT_KV:
 
-            i_rc = create_message_INSERT(atoi(key), value, msgToSend);
+            i_rc = create_message_INSERT(hashedKey, value, msgToSend);
             printToLog(logF, ipAddress, "Message returned by create_message_INSERT");
             printToLog(logF, ipAddress, msgToSend);
             if ( ERROR == i_rc )
@@ -610,7 +611,7 @@ int createAndSendOpMsg()
 
         case LOOKUP_KV:
            
-            i_rc = create_message_LOOKUP(atoi(key), msgToSend);
+            i_rc = create_message_LOOKUP(hashedKey, msgToSend);
             if ( ERROR == i_rc )
             {
                 printf("\nUnable to create lookup message\n");
@@ -643,7 +644,7 @@ int createAndSendOpMsg()
 
         case UPDATE_KV:
    
-            i_rc = create_message_UPDATE(atoi(key), value, msgToSend);
+            i_rc = create_message_UPDATE(hashedKey, value, msgToSend);
             if ( ERROR == i_rc )
             {
                 printf("\nUnable to create update message\n");
@@ -676,7 +677,7 @@ int createAndSendOpMsg()
 
         case DELETE_KV:
 
-            i_rc = create_message_DELETE(atoi(key), msgToSend);
+            i_rc = create_message_DELETE(hashedKey, msgToSend);
             if ( ERROR == i_rc )
             {
                 printf("\nUnable to create delete message\n");
