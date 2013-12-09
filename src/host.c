@@ -2252,10 +2252,10 @@ int printKVStore()
         //scanf("%d", &input);
         //fgets(input, 2, stdin);
         //if ( (0 == strcmp(input, "1") ) )
-            //iterate_hash_table();
+            iterate_hash_table();
         //else if ( (0 == strcmp(input, "2") ) )
             sleep(5);
-            print_table(hb_table);
+            //print_table(hb_table);
         //else 
         //{
             //printf("\nInvalid Choice. Try after 15 secs\n");
