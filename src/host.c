@@ -1093,6 +1093,9 @@ void * FEfunction(void *clientFdPassed)
          sprintf(logMsg, "opcode: %d, key: %d, value: %s", temp->opcode, temp->key, temp->value);
          printToLog(logF, ipAddress, logMsg);
 
+         // print last 20 read writes
+         printf("\n%s\n", logMsg);
+
          // If the received message is one of the following op 
          // codes then no need to hash the key
          // INSERT_RESULT
